@@ -1,0 +1,77 @@
+
+Enumeration and misconfigured services
+
+Enumeration is the process of gathering information on a target in order to find potential attack vectors and aid in exploitation.
+This process is essential for an attack to be successful, as wasting time with exploits that either don't work or can crash the system can be a waste of energy. Enumeration can be used to gather usernames, passwords, network information, hostnames, application data, services, or any other information that may be valuable to an attacker.
+
+SMB
+Typically, there are SMB share drives on a server that can be connected to and used to view or transfer files. SMB can often be a great starting point for an attacker looking to discover sensitive information - you'd be surprised what is sometimes included on these shares. 
+
+Later, in your career, you may find yourself in a situation as a pen-tester where you need to discover these services and make recommendations on the fixes which would close/eliminate these vulnerabilities.
+
+
+---------------------------------------
+Setup Guidance:
+For this question, use the VM ubuntu22043, this is a fairly modern VM running a recent Ubuntu OS (it would work identically on the latest version since we are not exploiting a weakness in the OS, but rather a misconfigured service - service misconfiguration being a large cause of vulnerabilities in real life). In this question you are going to gain familiarity with: enumeration, smb servers, and learn that misconfigurations are a common source for security leaks. 
+Set up the VM and make sure you can connect to the VM from the "outside" (i.e., a Kali VM). 
+
+The VM is configured to automatically pick up new network adapters and obtain an IP address from any adapter you connect it to. However, this only seems to work with VMWare. On VirtualBox you will have to manually run the dhclient utility to enable the virtual en0 adapter. (similar procedure as for lab 4). . 
+
+As always, we recommend you either pick any network setup that lets you connect Kali to this VM (so we suggest placing this UbuntuVM on the same network as Kali).
+
+You will need to determine the IP address of the VM. Log in as student/student (username/password). 
+Then run: /sbin/ip addr show
+Look for an IP address that is not 127.0.0.1 (unless you gave it Host-Only) of course).
+
+If you do not have an IP address that is not 127.0.0.1 then you need to bring up the VM's network card. 
+You have sudo power for one command only. As student, run "sudo dhclient", provide the password "student". 
+Then check the ip address again. This is now your VM's IP address. 
+With that IP address in hand you can connect to the VM (you might have to set up port forwarding depending on your settings). 
+
+---------------------------------------
+1.  Enumeration.
+Use nmap to scan the Ubuntu22043 VM for open ports. 
+Question: Which port is samba running on (provide the actual port that is used for accepting connections in modern times, do NOT provide multiple ports).
+Answer: 
+Provide the command you used here:
+
+
+2. Use the tool enum4linux on Kali to find interesting shares on the Ubuntu22043 VM. 
+ Question: which share looks interesting?
+ Answer: 
+Provide the command you used here:
+
+3. Using the tool smbclient on Kali,  
+  Question: does this smb server allow passwordless and anonymous access, what command did you use to test this?  
+  Answer: Y/N?  
+Provide the single/one command you used here:
+
+4. Explore the smb share after connecting to it from Kali: 
+   Question: What is the flag in flag.txt in the share on Ubuntu22043
+   Answer:
+
+   Question: Now that you have access to the smb share, explore further. What is another potential user name on the Ubuntu22043 VM?
+   Answer:
+   How did you find out what the other usernames are (command or what did you do):
+
+5. Widening your reach through horizontal privilege escalation (taking over more accounts of the same level of privilege on the same system). Use hydra to obtain the login of that other user. 
+How do you use hydra? man hydra, but on the next line there is a sample usage provided to you, you will need to change it to make it work for your setup. 
+
+"hydra -t 4 -l <username> -P /usr/share/wordlists/seclists/Passwords/darkweb2017-top1000.txt vV 10.10.10.6 ssh" 
+You can use any wordlist you want, I just know that the password is guaranteed to be in this one (if you do not have this wordlist in Kali, it is also provided in the starter files).  
+(this might take up to 45 minutes, as you don’t want to overwhelm the ssh server, often ssh servers limit the number of connections, you may also want to shuffle this file's contents, or break it down into smaller chunks to run separately)). 
+What is the user’s password: ??
+What is the flag in the the flag.txt file when logging in as that user?:
+What is the exact command you used to obtain the password (and how long did it take approximately):
+
+6. What would be the steps to take to correct this vulnerabilityand to correctly configure the smb server. (high level one/two sentences explanation is ok). 
+Answer: 
+
+7.  Assume that instead of an ssh server, you'd be using hydra to connect to an ftp server, what is the hydra command for this? 
+Answer: 
+
+8. What other file shareing servers/services do exist that hyrda can be used for?
+Answer:  
+
+
+End of question (8 questions for this topic).
