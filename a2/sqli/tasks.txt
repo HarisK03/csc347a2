@@ -11,10 +11,6 @@
 3) (0.25 pts)
  Provide a diff or fixed lines that fix this issue
 we need to use parameterized queries with placeholders that use the entire query and not let escapes
-$query = "SELECT id, username, email FROM users WHERE username = :username";
-$result = $db->prepare($query);
-$result->execute(['username' => $q]);
-
 $query = "SELECT id, username, email FROM users WHERE username LIKE :search OR email LIKE :search";
 $result = $db->prepare($query);
 $result->execute(['search' => '%' . $q . '%']);
