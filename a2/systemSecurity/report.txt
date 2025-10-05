@@ -1,49 +1,177 @@
 1) [2 Marks]
-	Command to init the database: 
-	Command to run a check:
-	Command to get a report: 
+	Command to init the database: sudo tripwire --init
+	Command to run a check: sudo tripwire --check
+	Command to get a report: sudo twprint --print-report --twrfile /var/lib/tripwire/report/ubuntu804Server-20251004-193359.twr
 	Place the report in twreport1.txt
 
-2a) [5 Marks] Document the steps you took to 'take the drive out of the Ubuntu804_owasp VM and place it in the Kali VM'. 
+2a) [5 Marks] Document the steps you took to 'take the drive out of the Ubuntu804_owasp VM and place it in the Kali VM'.
 	1) First shutdown the Ubuntu804_owasp vm.
-	2) 
-	3) 
-	...
+	2) Locate the path where the hard disk is for Ubuntu804_owasp vm.
+	   a) First type 'vmplayer' in a shell.
+	   b) From the list of vms in the vmplayer GUI, click on the 'Ubuntu804Server_owasp' vm. Then click 'Edit virtual machine settings' in the right panel of the GUI.
+	   c) Note down the path under 'Hardware' -> 'Hard Disk (SCSI)' -> Disk File. E.g. /path/Ubuntu804Server_owasp/Ubuntu.vmdk.
+	3) Unmount the hard disk from the Ubuntu804_owasp vm by clicking 'Hard Disk (SCSI)' -> 'Remove' -> 'OK'/Save'.
+	4) Add the Ubuntu drive to Kali VM
+	   a) Ensure the Kali vm is shutdown.
+	   b) From the vmplayer GUI, click on the 'kali-linux-2025.3-vmware-amd64' (or similar) vm. Then click 'Edit virutal machine settings'.
+	   c) Click 'Add' -> 'Hard Disk' -> 'SCSI' -> 'Use an existing virtual disk' -> [find the path noted in step 2c (e.g. /path/Ubuntu804Server_owasp/Ubuntu.vmdk)] -> 'Finsh' -> 'Keep Existing Format' -> 'OK'.
+	4) Start the Kali vm. Mount the drive.
+	   a) To mount the drive, open a shell. Then type 'sudo fdisk -l' to list available drives.
+	   b) Find the drive that matches the owasp drive (this case is sdb):
 
-2b) [3 Marks] Copy the shadow file to the Kali VM and see if you 
-    can determine some of the passwords using John the ripper. 
+		  Disk /dev/sdb: 8 GiB, 8589934592 bytes, 16777216 sectors
+		  Device     Boot    Start      End  Sectors   Size Id Type
+		  /dev/sdb1  *          63 15952544 15952482   7.6G 83 Linux
+		  /dev/sdb2       15952545 16771859   819315 400.1M  5 Extended
+		  /dev/sdb5       15952608 16771859   819252   400M 82 Linux swap / Solaris
 
-	PLACE john the ripper results below. 
+	   c) Create the mount directory with 'sudo mkdir -p /mnt/ubuntu804'.
+	   d) Mount the partition with 'sudo mount /dev/sdb1 /mnt/ubuntu804'.
+	5) The Ubuntu804_owasp vm is now mounted at /mnt/ubuntu804. All files are available in the directory. e.g. /etc/passwd on the Ubuntu804_owasp is found in /mnt/ubuntu804/etc/passwd.
 
-2c) [2 Marks] Modify user sid so that they are now a root user with password 'password'. 
+2b) [3 Marks] Copy the shadow file to the Kali VM and see if you
+    can determine some of the passwords using John the ripper.
+
+	PLACE john the ripper results below.
+
+	arnold:password:1000:1000:Arnold Rosenbloom,,,:/home/arnold:/bin/bash
+	joe:joeeoj:1002:1002::/home/joe:/bin/bash
+	sid:letMeIn:1003:1003::/home/sid:/bin/bash
+
+2c) [2 Marks] Modify user sid so that they are now a root user with password 'password'.
 
 	EXPLAIN HOW YOU DO THIS AND PLACE MODIFIED FILES ETC IN THIS DIRECTORY
 
+	1. Create a hashed password with 'openssl passwd -6 -salt xyz password' -> output: $6$xyz$ShNnbwk5fmsyVIlzOf8zEg4YdEH2aWRSuY4rJHbzLZRlWcoXbxxoI0hfn0mdXiJCdBJ/lTpKjk.vu5NZOv0UM0
+	2. Edit /mnt/ubuntu804/etc/passwd and change the sid user to the following: sid:x:0:0::/home/sid:/bin/bash
+	3. Edit /mnt/ubuntu804/etc/shadow and change the password for the sid user: sid:$6$xyz$ShNnbwk5fmsyVIlzOf8zEg4YdEH2aWRSuY4rJHbzLZRlWcoXbxxoI0hfn0mdXiJCdBJ/lTpKjk.vu5NZOv0UM0:16735:0:99999:7:::
+
+	Optional:
+	-> sudo umount /mnt/ubuntu804
+	-> shutdown kali vm
+	-> mount disk to ubuntu vm and ssh as sid:password (now is root user)
+
 2d) NOTHING TO REPORT HERE
 
-3a) [2 Marks] Place the result of running tripwire in twreport2.txt. 
+3a) [2 Marks] Place the result of running tripwire in twreport2.txt.
 	Identify anything interesting below.
 
-3b) [4 Marks] 
+	Consider the snippet from the report below. It shows that there were root file-system executables created and that /etc/passwd and /etc/shadow were modified.
+	This is interesting and concerning because this could suggest a potential compromise of the machine.
+
+	-------------------------------------------------------------------------------
+	Rule Name: Security Control (/etc/passwd)
+	Severity Level: 66
+	-------------------------------------------------------------------------------
+	----------------------------------------
+	Modified Objects: 1
+	----------------------------------------
+
+	Modified object name:  /etc/passwd
+
+	Property:            Expected                    Observed
+	-------------        -----------                 -----------
+	* Inode Number         99512                       99183
+
+	-------------------------------------------------------------------------------
+	Rule Name: Security Control (/etc/shadow)
+	Severity Level: 66
+	-------------------------------------------------------------------------------
+	----------------------------------------
+	Modified Objects: 1
+	----------------------------------------
+
+	Modified object name:  /etc/shadow
+
+	Property:            Expected                    Observed
+	-------------        -----------                 -----------
+	* Inode Number         99390                       99511
+
+	-------------------------------------------------------------------------------
+	Rule Name: Root file-system executables (/bin)
+	Severity Level: 100
+	-------------------------------------------------------------------------------
+	----------------------------------------
+	Modified Objects: 2
+	----------------------------------------
+
+	Modified object name:  /bin/cat
+
+	Property:            Expected                    Observed
+	-------------        -----------                 -----------
+	* Modify Time          Fri 04 Apr 2008 02:42:37 AM EDT
+													Sat 04 Oct 2025 09:54:47 PM EDT
+
+	Modified object name:  /bin/ps
+
+	Property:            Expected                    Observed
+	-------------        -----------                 -----------
+	* Modify Time          Thu 10 Jul 2008 05:28:34 AM EDT
+													Sat 04 Oct 2025 09:54:51 PM EDT
+
+3b) [4 Marks]
 	last # this is a command
 
-		WHAT DID YOU LEARN
+	e.g:
+	arnold   tty1                          Sat Oct  4 21:55   still logged in
+	arnold   tty1                          Sat Oct  4 21:55 - 21:55  (00:00)
+	sid      tty1                          Sat Oct  4 21:54 - 21:54  (00:00)
+	sid      tty1                          Sat Oct  4 21:54 - 21:54  (00:00)
+	reboot   system boot  2.6.24-24-server Sat Oct  4 21:51 - 22:11  (00:19)
+	arnold   pts/0        192.168.42.1     Sat Oct  4 19:32 - down   (00:05)
+	arnold   tty1                          Sat Oct  4 19:29 - down   (00:08)
+	arnold   tty1                          Sat Oct  4 19:29 - 19:29  (00:00)
+	reboot   system boot  2.6.24-24-server Sat Oct  4 19:27 - 19:38  (00:10)
+
+	The last command displays login history and system reboot information from the system's login.
+	There are seeral reboots and logins which may be unexpected. particularly with a user sid if arnold is to be used.
+	This can give a "papertrail" of users that logged into the machine and who had interactive shells.
 
 	uptime # this is a command
 
-		WHAT DID YOU LEARN
+	e.g. 22:14:14 up 22 min,  2 users,  load average: 0.00, 0.00, 0.00
+
+	Shows how long the machine has been up since the last reboot.
+	The load averages might indicate malicious processes if there is significant load.
+	Also shows number of logged in users which could indicate current attacks (if number doesn't match what one would expect).
 
 	/var/log/* # these are log files
 
-		WHAT DID YOU LEARN
+	auth.log:
+	Oct  4 21:54:21 ubuntu804Server login[5020]: pam_unix(login:session): session opened for user sid by LOGIN(uid=0)
+	Oct  4 21:54:21 ubuntu804Server login[5131]: ROOT LOGIN  on 'tty1'
+	Oct  4 21:54:58 ubuntu804Server login[5020]: pam_unix(login:session): session closed for user sid
+
+	This shows that the 'sid' user logged in and immediately after a root login took place.
+	This is closely tied to the 'sid' user having root permissions.
 
 	.bash_history # what is this, whos should you look at and why are you looking?
 
-		WHAT DID YOU LEARN
+	.bash_history is the bash history, containing the bash terminal commands that a user runs.
+	Based on the prior hints above, we should consider taking a look at a the users sid (particularly sid because that seems to have spanwed the root shell).
 
+	>> cat /home/sid/.bash_history
+	touch /bin/cat
+	touch /bin/ps
+	logout
 
-4) [2 Marks] List updates to policy below. 
+	And indeed the commands seem to indicate creation of suspicious files in a /root owned directory. For confirmation, cat /root/.bash_history is empty.
 
-5) [2 Marks] Report on what the attacker could have done to leave fewer traces than they did in this attack. 
-	What would you do to detect a compromise even in this case? 
+4) [2 Marks] List updates to policy below.
 
+   - Enforce physical security: locked server rooms, restricted access, etc.
+   - Enable full-disk encryption (e.g., LUKS) to protect data if disks are removed.
+   - Enforce least privilege and strong password policies for all admin accounts.
+
+5) [2 Marks] Report on what the attacker could have done to leave fewer traces than they did in this attack.
+	What would you do to detect a compromise even in this case?
+
+	To leave fewer traces:
+	- Use a live USB and operate entirely in-memory (no disk writes) to avoid modifying VM disk.
+	- Use echo/sed to surgically remove specific evidence from .bash_history and /var/log/* rather than wiping files.
+	- Run commands from a file, so specific commands are unknown.
+
+	To still detect a compromise:
+	- Maintain file integrity baselines (Tripwire) and compare cryptographic hashes.
+	- Forward logs (syslog, auth, auditd, wtmp) and Tripwire reports to an off-host, immutable server.
+	- Monitor network activity for unusual connections or data exfiltration.
