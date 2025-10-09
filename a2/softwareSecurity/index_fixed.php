@@ -15,6 +15,16 @@
 	# Before processing a request, first verify the page token.
 	###################################################################################################
 
+	if(!isset($_SESSION['csrf_token']))$_SESSION['csrf_token'] = md5(random_bytes(32));
+	function verifyCSRFToken(){
+		if(!isset($_REQUEST['csrf_token']) || $_REQUEST['csrf_token'] !== $_SESSION['csrf_token']){
+			global $g_errors;
+			$g_errors = "Request rejected due to invalid CSRF token.";
+			return false;
+		}
+		return true;
+	}
+
 	if(!isset($_SESSION['isLoggedIn']))$_SESSION['isLoggedIn']=False;
 	$operation=$_REQUEST['operation'];
 	$g_debug="";
@@ -34,7 +44,7 @@
                 pg_set_client_encoding($dbconn, 'UTF8');
                 return $dbconn;
         }
-	if($operation == "login"){
+	if($operation == "login" && verifyCSRFToken()){
 		$user=$_REQUEST['user'];
 		$password=$_REQUEST['password'];
 		$dbconn = pg_connect_db();
@@ -65,7 +75,7 @@
 			$g_debug = "$user not logged in";
 			$_SESSION['isLoggedIn']=False;
 		}
-	} elseif($operation == "deleteExpression"){
+	} elseif($operation == "deleteExpression" && verifyCSRFToken()){
 		$expressionId = $_REQUEST['expressionId'];
 		$accountId=$_REQUEST['accountId']; 
 		$dbconn = pg_connect_db();
@@ -84,8 +94,7 @@
 
 		$result = pg_prepare($dbconn, "", "DELETE FROM solution WHERE id=$expressionId AND accountId=$accountId");
 		$result = pg_execute($dbconn, "", array());
-	} elseif($operation == "addExpression"){
-
+	} elseif($operation == "addExpression" && verifyCSRFToken()){
 		###################################################################################################
 		# FIX: XSS: user input/output is not vetted
 		# First check that the application is vulnerable by placing html in the
@@ -109,7 +118,7 @@
 		} else {
 			$g_errors="$expression is already in our database";
 		}
-	} elseif($operation == "logout"){
+	} elseif($operation == "logout" && verifyCSRFToken()){
 		unset($_SESSION);
 		$_SESSION['isLoggedIn']=False;
 	}
@@ -126,7 +135,7 @@
 		<h1>Four Fours</h1>
 		<font color="red"><?=$g_errors ?></font><br/><br/>
 		<? if($g_isLoggedIn){ ?>
-			<a href=?operation=logout>Logout</a>
+			<a href="?operation=logout&csrf_token=<?=$_SESSION['csrf_token']?>">Logout</a>
 			<br/>
 			<br/>
 			<div style="width:400px; text-align:left;">
@@ -164,7 +173,7 @@
 										$expressionAccountId=$row[$count++];
 										$expressionId=$row[$count++];
 										if($expressionAccountId==$g_accountId){
-											$deleteLink="<a href=\"?operation=deleteExpression&expressionId=$expressionId&accountId=$g_accountId\"><img src=\"delete.png\" width=\"20\" border=\"0\" /></a>";
+											$deleteLink="<a href=\"?operation=deleteExpression&expressionId=$expressionId&accountId=$g_accountId&csrf_token={$_SESSION['csrf_token']}\"><img src=\"delete.png\" width=\"20\" border=\"0\" /></a>";
 										} else {
 											$deleteLink="";
 										}
@@ -178,6 +187,7 @@
 										<input type="hidden" name="value" value="<?=$i?>"/>
 										<input type="hidden" name="operation" value="addExpression"/>
 										<input type="hidden" name="accountId" value="<?=$g_accountId ?>"/>
+										<input type="hidden" name="csrf_token" value="<?=$_SESSION['csrf_token']?>"/>
 									</form>
 								</tr>
 							</table>
@@ -193,6 +203,7 @@
 						<td>password: <input type="password" size="10" name="password"/> </td>
 						<td>
 							<input type="hidden" name="operation" value="login"/>
+							<input type="hidden" name="csrf_token" value="<?=$_SESSION['csrf_token']?>"/>
 							<input type="submit" value="login"/>
 						</td>
 					</tr>
