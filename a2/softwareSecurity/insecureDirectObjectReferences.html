@@ -5,36 +5,95 @@
 		<ul>
 			<li> Brief explanation:
 <xmp>
+IDOR is a web vulnerability where an application uses user provided input to access databases or files without proper authorization checks. Attackers can modify parameters like account_id to access or modify data belonging to other users. In the four fours application, it trusts the client provided account_id parameter instead of verifying the actual logged in user's permissions.
 </xmp>
 			</li>
 			<li> Example code etc.:
 <xmp>
+The deleteExpression and addExpression operations accept accountId from the request without validating:
+
+} elseif($operation == "deleteExpression" && verifyCSRFToken()){
+    $expressionId = $_REQUEST['expressionId'];
+    $accountId=$_REQUEST['accountId'];  // Takes accountId from user input
+    $dbconn = pg_connect_db();
+    $result = pg_prepare($dbconn, "", "DELETE FROM solution WHERE id=$expressionId AND accountId=$accountId");
+    $result = pg_execute($dbconn, "", array());
+}
+
+Instead of using $_SESSION['accountId'] to verify who the user is, it trusts the accountId sent in the request 
+This means anyone can delete or modify any user's data by just changing the accountId parameter.
 </xmp>
 			</li>
 			<li> How attacker exploits this: 
 <xmp>
+An attacker logged in as User 1 (accountId=8) can delete User 2's (accountId=5) expression by just changing 
+the accountId parameter in the request:
+
+Normal request
+?operation=deleteExpression&expressionId=10&accountId=8
+
+Malicious request where User 1 deletes User 2's expression
+?operation=deleteExpression&expressionId=15&accountId=5
+
+The server processes the delete because it doesn't verify that the logged in user id=8 in session matches the accountId in the request id=5. Same issue also applies to adding expressions
 </xmp>
 			</li>
 			<li> Impact: CIAaa and some details
 <xmp>
+C: Users' data can be accessed by unauthorized parties who can see what expressions belong to which specific accounts
+I: Attackers can delete any user's expressions or add expressions to other users' accounts
+A: Attackers can delete expressions from any user's account, making the application unusable
+
+This allows any authenticated user to perform operations on based on any other user. Easy to detect and exploit by modifying the URL parameters.
 </xmp>
 			</li>
 		</ul>
 
 		<h2> INSTRUCTIONS TO VERIFY VULNERABILITY BELOW </h2>
 <xmp>
-</xmp>
-               <h2> INSTRUCTIONS TO VERIFY VULNERABILITY BELOW </h2>
-<xmp>
+1. Create two user accounts
+	- User 1 accountId=8
+	- User 2 accountId=5
+
+2. Login as User 1 and create an expression
+3. Login as User 2 and create an expression
+4. While logged in as User 2, hover over User 2's delete icon and copy the URL
+   Ex: ?operation=deleteExpression&expressionId=15&accountId=5
+
+5. Logout and login as User 1
+6. In the address bar, paste the URL from step 4
+   ?operation=deleteExpression&expressionId=15&accountId=5
+
+7. Enter and User 2's expression is deleted even though User 1 shouldn't be able to
+
+This proves that accountId isn't being validated against the actual logged in user.
 </xmp>
                 <h2> The Fix </h2>
                 <ul>
                         <li> Explain the fix:
 <xmp>
+We fix this by removing accountId from requests and using the one in session instead:
+
+1. line 80:
+   } elseif($operation == "deleteExpression" && verifyCSRFToken()){
+       $expressionId = $_REQUEST['expressionId'];
+       $accountId=$_SESSION['accountId'];  // Use session
+
+2. line 110:
+   } elseif($operation == "addExpression" && verifyCSRFToken()){
+       $expression = $_REQUEST['expression'];
+       $value=$_REQUEST['value'];
+       $accountId=$_SESSION['accountId'];  // Use session
+
+3. remove line 189
 </xmp>
                         </li>
                         <li> How the fix resolves the issue:
 <xmp>
+The fix insures proper authorization by using server side session data instead of parameters in the request.
+When an attacker try to manipulate accountId, the server ignores the accountId in the request and uses $_SESSION['accountId'] instead
+
+Sessions are stored server side and can't be manipulated, so there's no impersonating other users. Every operation uses the accountId from the session ensuring users can only perform actions on their own data.
 </xmp>
                         </li>
                 </ul>

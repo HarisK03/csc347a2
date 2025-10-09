@@ -77,7 +77,7 @@
 		}
 	} elseif($operation == "deleteExpression" && verifyCSRFToken()){
 		$expressionId = $_REQUEST['expressionId'];
-		$accountId=$_REQUEST['accountId']; 
+		$accountId=$_SESSION['accountId']; 
 		$dbconn = pg_connect_db();
 
 		###################################################################################################
@@ -107,7 +107,7 @@
 
 		$expression = $_REQUEST['expression'];
 		$value=$_REQUEST['value'];
-		$accountId=$_REQUEST['accountId'];
+		$accountId=$_SESSION['accountId'];
 
 		$dbconn = pg_connect_db();
 		$result = pg_prepare($dbconn, "", "SELECT * FROM solution WHERE expression='$expression'");
@@ -173,7 +173,7 @@
 										$expressionAccountId=$row[$count++];
 										$expressionId=$row[$count++];
 										if($expressionAccountId==$g_accountId){
-											$deleteLink="<a href=\"?operation=deleteExpression&expressionId=$expressionId&accountId=$g_accountId&csrf_token={$_SESSION['csrf_token']}\"><img src=\"delete.png\" width=\"20\" border=\"0\" /></a>";
+											$deleteLink="<a href=\"?operation=deleteExpression&expressionId=$expressionId&csrf_token={$_SESSION['csrf_token']}\"><img src=\"delete.png\" width=\"20\" border=\"0\" /></a>";
 										} else {
 											$deleteLink="";
 										}
@@ -186,7 +186,7 @@
 										<td><input type="submit" value="add"/></td>
 										<input type="hidden" name="value" value="<?=$i?>"/>
 										<input type="hidden" name="operation" value="addExpression"/>
-										<input type="hidden" name="accountId" value="<?=$g_accountId ?>"/>
+										<!-- <input type="hidden" name="accountId" value="<?=$g_accountId ?>"/> -->
 										<input type="hidden" name="csrf_token" value="<?=$_SESSION['csrf_token']?>"/>
 									</form>
 								</tr>
