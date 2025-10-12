@@ -49,28 +49,32 @@
 		$password=$_REQUEST['password'];
 		$dbconn = pg_connect_db();
 		# FIX OWASP 2013 A1: SQL Injection, use prepared statements
-		$query= "SELECT id, username, firstName, lastName, passwd FROM account WHERE username='$user' AND passwd='$password'";
+		$query= "SELECT id, username, firstName, lastName, passwd FROM account WHERE username='$user'";
 		$result = pg_prepare($dbconn, "", $query);
 		$result = pg_execute($dbconn, "", array());
 		if($row = pg_fetch_row($result)) {
+			if(password_verify($password, $row[4])){
+				###################################################################################################
+				# FIX OWASP 2013 A2: SESSION FIXATION
+				# Check that this application is vulnerable by bringing up firefox developer tools,
+				# visiting the website, then logging in, notice that the same cookie is used after
+				# change of privilege.
+				# Fix this by...
+				# Destroy current session and get a new session id when change in privilege.
+				# Check to make sure that the cookie changes when logged in
+				# Note: Some browsers now protect against reflection attacks, but not all.
+				# See: http://php.net/manual/en/function.session-regenerate-id.php
+				###################################################################################################
 
-			###################################################################################################
-			# FIX OWASP 2013 A2: SESSION FIXATION
-			# Check that this application is vulnerable by bringing up firefox developer tools,
-			# visiting the website, then logging in, notice that the same cookie is used after
-			# change of privilege.
-			# Fix this by...
-			# Destroy current session and get a new session id when change in privilege.
-			# Check to make sure that the cookie changes when logged in
-			# Note: Some browsers now protect against reflection attacks, but not all.
-			# See: http://php.net/manual/en/function.session-regenerate-id.php
-			###################################################################################################
-
-			$_SESSION['accountId']=$row[0];
-			$_SESSION['user']=$row[1];
-			$_SESSION['firstName']=$row[2];
-			$_SESSION['lastName']=$row[3];
-			$_SESSION['isLoggedIn']=True;
+				$_SESSION['accountId']=$row[0];
+				$_SESSION['user']=$row[1];
+				$_SESSION['firstName']=$row[2];
+				$_SESSION['lastName']=$row[3];
+				$_SESSION['isLoggedIn']=True;
+			} else {
+				$g_debug = "$user not logged in";
+				$_SESSION['isLoggedIn']=False;
+			}
 		} else {
 			$g_debug = "$user not logged in";
 			$_SESSION['isLoggedIn']=False;

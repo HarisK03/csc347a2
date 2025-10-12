@@ -5,18 +5,52 @@
 		<ul>
 			<li> Brief explanation:
 <xmp>
+Sensitive data exposure happens when webapps store or transmit sensitive info like passwords without proper protection like hashing. Passwords in the four fours app are stored as plaintext in the database, so anyone with database access can see all user passwords. The app also uses HTTP instead of HTTPS, so information like passwords are sent unencrypted over the network where attackers can intercept them.
 </xmp>
 			</li>
 			<li> Example code etc.:
 <xmp>
+Database schema stores passwords as plaintext
+
+create table account (
+    id serial primary key,
+    username varchar(50) UNIQUE,
+    passwd varchar(50) NOT NULL,  // plaintext
+    firstName varchar(50),
+    lastName varchar(50)
+);
+
+INSERT INTO account(firstName, lastName, username, passwd) values('Alex','Large','bigBoy','sdfdsfd');
+INSERT INTO account(firstName, lastName, username, passwd) values('Anne','Lion','anne','lion');
+
+Then authentication compares plaintext passwords directly:
+
+$query= "SELECT id, username, firstName, lastName, passwd FROM account WHERE username='$user' AND passwd='$password'";
+
+Anyone with access to the database can see all the passwords in plaintext.
 </xmp>
 			</li>
 			<li> How attacker exploits this: 
 <xmp>
+If an attacker gains database access through SQL injection or steals credentials they can read all user passwords by using
+
+select username, passwd from account;
+
+Then the attacker has access to all user login info and can use it to login as any user, and since alot of users reuse passwords across sites, 
+the attacker can try these passwords on other services like email, social media, or banking.
+
+Interception via HTTP:
+Since the app uses HTTP instead of HTTPS, attackers on the same network can use tools like Wireshark to capture login requests 
+and see the text passwords as they're transmitted.
 </xmp>
 			</li>
 			<li> Impact: CIAaa and some details
 <xmp>
+C: All user passwords are exposed if database is compromised and passwords are visible during transmission
+I: Account details can be used to perform unauthorized actions
+A: Attackers can lock users out by changing passwords or delete accounts
+
+Database breaches expose every user's credentials and enable account takeovers on other services. This is easy to detect by checking database schema and easy to exploit with any database access.
 </xmp>
 			</li>
 		</ul>
@@ -26,15 +60,56 @@
 </xmp>
                <h2> INSTRUCTIONS TO VERIFY VULNERABILITY BELOW </h2>
 <xmp>
+1. Find a sql injection vulnerability
+
+2. Query the account table:
+   SELECT username, passwd FROM account;
+
+3. Open browser dev tools F12 and go to Network tab
+4. Login with any credentials
+5. Click on the http://192.168.10.35/fourFours/index.php?operation=logout request in the Network tab
+6. Click on the "Payload"
+7. See that user=username&password=plaintext&operation=login
+
+The password is sent unencrypted over HTTP and stored as plaintext in the database.
 </xmp>
                 <h2> The Fix </h2>
                 <ul>
                         <li> Explain the fix:
 <xmp>
+We fix this by hashing passwords using PHP's password_hash() which uses bcrypt by default:
+
+1. line 52-81:
+       $query= "SELECT id, username, firstName, lastName, passwd FROM account WHERE username='$user'";
+       $result = pg_prepare($dbconn, "", $query);
+       $result = pg_execute($dbconn, "", array());
+       if($row = pg_fetch_row($result)) {
+           if(password_verify($password, $row[4])){
+               $_SESSION['accountId']=$row[0];
+               $_SESSION['user']=$row[1];
+               $_SESSION['firstName']=$row[2];
+               $_SESSION['lastName']=$row[3];
+               $_SESSION['isLoggedIn']=True;
+           } else {
+               $g_debug = "$user not logged in";
+               $_SESSION['isLoggedIn']=False;
+           }
+       } else {
+           $g_debug = "$user not logged in";
+           $_SESSION['isLoggedIn']=False;
+       }
+   }
+
+2. Hash existing passwords: Update the schema to varchar(255) to store hashes and for each account hash the password using password_hash($plaintext, PASSWORD_BCRYPT)
+
+3. Use HTTPS to encrypt data in transit
 </xmp>
                         </li>
                         <li> How the fix resolves the issue:
 <xmp>
+The fix protects passwords both at rest and in transit. password_hash() creates one way hashes that can't be reversed even with database access, and each password gets a unique salt to prevent whole table attacks. then password_verify() compares plaintext input to stored hash on use
+Then we use HTTPS to encrypt data in transit so even if the attacker intercepts traffic, they can't read the password or use network sniffing tools to steal it.
+If the database gets comprmised, passwords remain protected since hashes can't be reversed to plaintext.
 </xmp>
                         </li>
                 </ul>
