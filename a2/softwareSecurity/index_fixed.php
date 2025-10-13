@@ -49,9 +49,8 @@
 		$password=$_REQUEST['password'];
 		$dbconn = pg_connect_db();
 		# FIX OWASP 2013 A1: SQL Injection, use prepared statements
-		$query= "SELECT id, username, firstName, lastName, passwd FROM account WHERE username='$user'";
-		$result = pg_prepare($dbconn, "", $query);
-		$result = pg_execute($dbconn, "", array());
+		$result = pg_prepare($dbconn, "", "SELECT id, username, firstName, lastName, passwd FROM account WHERE username=$1");
+		$result = pg_execute($dbconn, "", array($user));
 		if($row = pg_fetch_row($result)) {
 			if(password_verify($password, $row[4])){
 				###################################################################################################
@@ -97,8 +96,8 @@
 		# Note: Simply not giving the user interface the option to delete is not sufficient.
 		###################################################################################################
 
-		$result = pg_prepare($dbconn, "", "DELETE FROM solution WHERE id=$expressionId AND accountId=$accountId");
-		$result = pg_execute($dbconn, "", array());
+		$result = pg_prepare($dbconn, "", "DELETE FROM solution WHERE id=$1 AND accountId=$2");
+		$result = pg_execute($dbconn, "", array($expressionId, $accountId));
 	} elseif($operation == "addExpression" && verifyCSRFToken()){
 		###################################################################################################
 		# FIX: XSS: user input/output is not vetted
@@ -115,11 +114,11 @@
 		$accountId=$_SESSION['accountId'];
 
 		$dbconn = pg_connect_db();
-		$result = pg_prepare($dbconn, "", "SELECT * FROM solution WHERE expression='$expression'");
-		$result = pg_execute($dbconn, "", array());
+		$result = pg_prepare($dbconn, "", "SELECT * FROM solution WHERE expression=$1");
+		$result = pg_execute($dbconn, "", array($expression));
 		if(!($row = pg_fetch_row($result))) {
-			$result = pg_prepare($dbconn, "", "insert into solution (value, expression, accountId) values ($value, '$expression', $accountId)");
-			$result = pg_execute($dbconn, "", array());
+			$result = pg_prepare($dbconn, "", "insert into solution (value, expression, accountId) values ($1, $2, $3)");
+			$result = pg_execute($dbconn, "", array($value, $expression, $accountId));
 		} else {
 			$g_errors="$expression is already in our database";
 		}
@@ -165,8 +164,8 @@
 							<table>
 								<?php
 									$dbconn = pg_connect_db();
-									$result = pg_prepare($dbconn, "", "SELECT firstName, lastName, value, expression, s.accountId, s.id FROM account a, solution s WHERE a.id=s.accountId AND value=$i ORDER BY firstName, lastName, expression");
-									$result = pg_execute($dbconn, "", array());
+									$result = pg_prepare($dbconn, "", "SELECT firstName, lastName, value, expression, s.accountId, s.id FROM account a, solution s WHERE a.id=s.accountId AND value=$1 ORDER BY firstName, lastName, expression");
+									$result = pg_execute($dbconn, "", array($i));
 									# FIX XSS: Output from users must be whitelisted or escaped
 
 									while ($row = pg_fetch_row($result)) {
