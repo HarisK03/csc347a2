@@ -5,18 +5,44 @@
 		<ul>
 			<li> Brief explanation:
 <xmp>
+Cross site scripting happens cause the app shows user data from the database without escaping any special characters. When users submit expressions with malicious HTML or js code, this code gets stored in the database and executed in other users' browsers when displayed.
 </xmp>
                         </li>
 			<li> Example code etc.:
 <xmp>
+the code outputs database values directly into HTML:
+
+(line 172)
+while ($row = pg_fetch_row($result)) {
+	$firstName=$row[0];s
+	$lastName=$row[1];
+	$expression=$row[2];
+	
+	echo("<tr> <td>$expression</td><td>$deleteLink</td><td>$firstName $lastName</td></tr>");
+}
+
+No escaping is applied to $expression, $firstName, or $lastName before outputting to the web page.
 </xmp>
                         </li>
 			<li> How attacker exploits this: 
 <xmp>
+The attacker exploits this by:
+
+1. Logging in to the fourfours website
+
+2. Submitting an expression containing malicious js which gets stored in the database:
+   <script>alert('Oh noes')</script>
+
+3. When any user views that page, the JavaScript executes in their browser
 </xmp>
                         </li>
 			<li> Impact: CIAaa and some details
 <xmp>
+C: Attacker can steal session cookies and auth tokens from users viewing the page
+I: The attacker can modify page content to insert fake forms or change displayed information
+A: Users can be redirected to malicious sites that then steal their user credentials
+
+This type of XSS is stored in the database and allows attackers to execute arbitrary javascript in victims' browsers. The attacker can steal credentials, redirect users, or perform actions as users without their knowledge.
 </xmp>
                         </li>
 		</ul>
@@ -26,15 +52,39 @@
 </xmp>
                <h2> INSTRUCTIONS TO VERIFY VULNERABILITY BELOW </h2>
 <xmp>
+1. Go to http://192.168.10.35/fourFours/ and login with valid credentials
+
+2. Find any value and submit this as an expression:
+   <script>alert('XSS')</script>
+
+3. After subitting the page reloads and the javascript executes showing an alert box
+
+4. Any user viewing this page will see the alert execute
+
+The code is vulnerable because it outputs user data without using htmlspecialchars() or htmlentities() to escape HTML special characters
 </xmp>
                 <h2> The Fix </h2>
                 <ul>
                         <li> Explain the fix:
 <xmp>
+We fix this by escaping user supplied input using htmlspecialchars():
+
+while ($row = pg_fetch_row($result)) {
+	$firstName=htmlspecialchars($row[0]);
+	$lastName=htmlspecialchars($row[1]);
+	$expression=htmlspecialchars($row[2]);
+	
+	echo("<tr> <td>$expression</td><td>$deleteLink</td><td>$firstName $lastName</td></tr>");
+}
+
+htmlspecialchars() converts special characters like < > into HTML representations (&lt; &gt; etc)
 </xmp>
                         </li>
                         <li> How the fix resolves the issue:
 <xmp>
+The fix prevents XSS by encoding dangerous characters before output, when the attacker submits <script>alert('XSS')</script> it gets stored normally in the database. When displayed the htmlspecialchars() converts it to &lt;script&gt;alert('XSS')&lt;/script&gt;
+
+The browser renders this as plain text instead of executing it and users see the literal text "<script>alert('XSS')</script>" instead of the javascript running.
 </xmp>
                         </li>
                 </ul>

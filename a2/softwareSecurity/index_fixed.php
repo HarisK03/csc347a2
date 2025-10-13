@@ -130,15 +130,15 @@
 	$g_isLoggedIn=$_SESSION['isLoggedIn']; 
 	$g_index="";
 	for($i=0;$i<=100;$i+=10){ $g_index=$g_index . "<a href=#$i>$i</a> "; } 
-	$g_userFullName=$_SESSION['firstName'] . " " . $_SESSION['lastName'];
-	$g_userFirstName=$_SESSION['firstName'];
+	$g_userFullName=htmlspecialchars($_SESSION['firstName']) . " " . htmlspecialchars($_SESSION['lastName']);
+	$g_userFirstName=htmlspecialchars($_SESSION['firstName']);
 	$g_accountId=$_SESSION['accountId'];
 ?>
 <html>
 	<body>
 		<center>
 		<h1>Four Fours</h1>
-		<font color="red"><?=$g_errors ?></font><br/><br/>
+		<font color="red"><?=htmlspecialchars($g_errors) ?></font><br/><br/>
 		<? if($g_isLoggedIn){ ?>
 			<a href="?operation=logout&csrf_token=<?=$_SESSION['csrf_token']?>">Logout</a>
 			<br/>
@@ -171,10 +171,10 @@
 
 									while ($row = pg_fetch_row($result)) {
 										$count=0;
-										$firstName=$row[$count++];
-										$lastName=$row[$count++];
+										$firstName=htmlspecialchars($row[$count++]);
+										$lastName=htmlspecialchars($row[$count++]);
 										$value=$row[$count++];
-										$expression=$row[$count++];
+										$expression=htmlspecialchars($row[$count++]);
 										$expressionAccountId=$row[$count++];
 										$expressionId=$row[$count++];
 										if($expressionAccountId==$g_accountId){
