@@ -5,18 +5,59 @@
 		<ul>
 			<li> Brief explanation:
 <xmp>
+Session fixation happens because the four fours app reuses the same session id before and after a user logs in. When a user logs in the session id stays the same even though their privilege level changes to authenticated. This lets attackers use user sessions by tricking them into using a session id that the attacker already knows.
 </xmp>
 			</li>
 			<li> Example code etc.:
 <xmp>
+The code doesnt regenerate session id:
+
+if($operation == "login" && verifyCSRFToken()){
+    $user=$_REQUEST['user'];
+    $password=$_REQUEST['password'];
+    $dbconn = pg_connect_db();
+    $query= "SELECT id, username, firstName, lastName, passwd FROM account WHERE username='$user'";
+    $result = pg_prepare($dbconn, "", $query);
+    $result = pg_execute($dbconn, "", array());
+    if($row = pg_fetch_row($result)) {
+        if(password_verify($password, $row[4])){
+            $_SESSION['accountId']=$row[0]; // session id stays the same after login
+            $_SESSION['user']=$row[1];
+            $_SESSION['firstName']=$row[2];
+            $_SESSION['lastName']=$row[3];
+            $_SESSION['isLoggedIn']=True;
+        }
+    }
+}
+
+The session cookie PHPSESSID remains unchanged when privilege changes to authenticated.
 </xmp>
 			</li>
 			<li> How attacker exploits this: 
 <xmp>
+The attacker exploits this vulnerability by doing the following steps:
+
+1. We visit the site and get a session id like PHPSESSID=79f6ed184bef005c6a718c91af11d706
+
+2. The attacker sends victim a link that sets this session id:
+   http://192.168.10.35/fourFours/index.php?PHPSESSID=79f6ed184bef005c6a718c91af11d706
+
+3. Victim logs in using the attacker's fixed session id
+
+4. The app doesn't regenerate the session id after login, so the session 79f6ed184bef005c6a718c91af11d706 is now authenticated
+
+5. The attacker uses the same session id to access the authenticated session
+
+Now we have full access to the victim's account without even knowing their password.
 </xmp>
 			</li>
 			<li> Impact: CIAaa and some details
 <xmp>
+C: Attacker can access user data and sensitive information from the authenticated session
+I: The attacker can modify, add or delete entries, and perform actions as the victim
+A: The attacker can delete the victim's account or change their password to lock them out
+
+Session fixation allows account takeovers without stealing passwords, gaining access to the authenticated session and performing actions as the victim. This is  dangerous because the victim might not realize their session has been compromised.
 </xmp>
 			</li>
 		</ul>
@@ -26,15 +67,43 @@
 </xmp>
                <h2> INSTRUCTIONS TO VERIFY VULNERABILITY BELOW </h2>
 <xmp>
+
+1. Visit http://192.168.10.35/fourFours/ and open browser dev tools F12 and go to Application tab
+
+2. Look at Cookies and copy the PHPSESSID value before login (example: 79f6ed184bef005c6a718c91af11d706)
+
+3. Login with valid credentials
+
+4. Check the PHPSESSID cookie after login, it's the same as before login
+
+The code is vulnerable because it doesn't call session_regenerate_id() after authentication. But modern PHP default use_strict_mode might prevent actual exploitation even though the code vulnerability exists.
 </xmp>
                 <h2> The Fix </h2>
                 <ul>
                         <li> Explain the fix:
 <xmp>
+We fix this by regenerating the session id after successful authentication using session_regenerate_id():
+
+	if(password_verify($password, $row[4])){
+		session_regenerate_id(true);
+		
+		$_SESSION['accountId']=$row[0];
+		$_SESSION['user']=$row[1];
+		$_SESSION['firstName']=$row[2];
+		$_SESSION['lastName']=$row[3];
+		$_SESSION['isLoggedIn']=True;
+    }
+
+session_regenerate_id(true) creates a new session ID and deletes the old session.
 </xmp>
                         </li>
                         <li> How the fix resolves the issue:
 <xmp>
+The fix prevents session fixation by creating a new session ID whenever privilege changes. session_regenerate_id(true) generates a new random id then deletes the old session.
+
+When the attacker tries to use the fixed session 79f6ed184bef005c6a718c91af11d706 they set up earlier, they arent authenticated because the victim's login created a new session id. The attacker's session remains unauthenticated.
+
+This makes session fixation attacks impossible because we cant control the id that gets assigned after login. Even if we trick the user into starting with a known session id, that id becomes useless after the victim logs in and gets assigned a new id.
 </xmp>
                         </li>
                 </ul>

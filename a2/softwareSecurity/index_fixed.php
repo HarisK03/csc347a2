@@ -66,6 +66,7 @@
 				# See: http://php.net/manual/en/function.session-regenerate-id.php
 				###################################################################################################
 
+				session_regenerate_id(true);
 				$_SESSION['accountId']=$row[0];
 				$_SESSION['user']=$row[1];
 				$_SESSION['firstName']=$row[2];
