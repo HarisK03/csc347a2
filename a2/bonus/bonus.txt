@@ -1,0 +1,13 @@
+We did not solve the bonus question.
+
+Our attempt (possibly worth part marks?):
+
+1. Take the .pdf and obtain the hash to crack using JTR.
+1a. Command is: pdf2john dz2.pdf > hash.txt
+
+According to hashcat docs (https://hashcat.net/wiki/doku.php?id=example_hashes) the algorithm is based on PDF 1.4 - 1.6 (Acrobat 5 - 8) - RC4 128 bits encryption.
+
+Our attempts:
+1. ./hashcat-7.1.2/hashcat.bin -m 10500 -a 0 hash.txt wordlists/rockyou.txt -r hashcat-7.1.2/rules/d3ad0ne.rule (rockyou wordlist with d3ad0ne rules)
+2. Take the top 3000 most popular words (https://www.ef.com/ca/english-resources/english-vocabulary/top-3000-words/) and run a combinator attack:
+2a. ./hashcat-7.1.2/hashcat.bin -w 3 -m 10500 -a 0 pdf.txt wordlists/popular_combined.txt -r hashcat-7.1.2/rules/best66.rule (combined as did other modifications)
