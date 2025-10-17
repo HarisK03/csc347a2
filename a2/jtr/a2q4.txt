@@ -1,3 +1,29 @@
-$1$salty$p9zNG3ShvA2njJZoRFaZm/
-$1$salty$iIWFvD4.Rv0P6/mFsx2gn0
-$1$salty$laM/CkgQQFLxVlmZaT9TK1
+The $1$ prefix in the hashes indicates that the MD5-crypt is used.
+
+$1$salty$p9zNG3ShvA2njJZoRFaZm/ = butter
+$1$salty$iIWFvD4.Rv0P6/mFsx2gn0 = is_4
+$1$salty$laM/CkgQQFLxVlmZaT9TK1 = popcorn
+
+First, this command was used which lead to cracking 2 out of 3 of the passwords:
+
+john --format=md5crypt --wordlist=/usr/share/wordlists/rockyou.txt --rules a2q4.txt
+
+This command is a JRT command, telling John that the format is md5crypt (as identified above), and rockyou.txt is a long list of common passwords from leaks so it attacks all of the words in that list, rules helps with things like capitalizing the first letter, adding a number at the end of the word, etc. and a2q4.txt contains the hashes. 
+
+After running this command, we got 2/3 of the hashes cracked (butter and popcorn). 
+
+Then, we quit this command and ran the next one (knowing that it was in l33t style and 4 characters long)
+
+┌──(kali㉿kali)-[~]
+└─$ john --format=md5crypt --incremental=ASCII --min-length=4 --max-length=4 a2q4.txt
+
+This command is similar to the first one but goes through the 4 character combinations of letters, numbers and symbols to crack the final hash. After running this command, we got the result of is_4, cracking all 3 passwords, as shown below:    
+                                                                
+┌──(kali㉿kali)-[~]
+└─$ john --show --format=md5crypt a2q4.txt
+
+?:butter
+?:is_4
+?:popcorn
+
+3 password hashes cracked, 0 left
