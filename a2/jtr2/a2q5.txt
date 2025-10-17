@@ -4,8 +4,20 @@ For this one, the following command was user to crack and retrieve the password:
 
 hashcat -m 500  -a 0 md5.hash    top10mil.txt --potfile-path=hc.pot --session=top10m_md5
 
-We used the top 10 million most command password list (available here https://github.com/danielmiessler/SecLists/blob/master/Passwords/Common-Credentials/Pwdb_top-10000000.txt) and with this list, the hashcat command tells hashcat the hash is in md5 format, -a 0 means attack each line in the wordlist, the md5.hash contains the hash (separated from the other 2), top10mil.txt is the wordlist, and the potfile tells hashcat where to put the cracked passwords.
+We used the top 10 million most command password list (available here https://github.com/danielmiessler/SecLists/blob/master/Passwords/Common-Credentials/Pwdb_top-10000000.txt) and with this list, the hashcat command tells hashcat the hash is in md5 format ($1), -a 0 means attack each line in the wordlist, the md5.hash contains the hash (separated from the other 2), top10mil.txt is the wordlist, and the potfile tells hashcat where to put the cracked passwords.
+
+----------------------------------------------------------
 
 $6$xyz$CSrEEoXkwhdxwcLAf5lMU0D2/VkIAyEJm.KZHV8tD6g0PnpfuRrRq5D/.OYKWJVkvzpWoaIGSm2mRYEHRKiQe0
 
+For this one, we attempted to solve this but were unsuccessful with all of our attempts. However, we identified that it is a sha512 crypt and here is an example of a hashcat algorithm used when attempting to solve this:
+
+hashcat -m 1800 -a 0 sha512.hash top10mil_letters_digits_symbols.txt --potfile-path=hc.pot --session=top10m_filtered_sha512
+
+----------------------------------------------------------
+
 $5$xyz$zKaWsgEvhG8BNTJvTxx6zq4GcoGVpUsyR4vLgGciRaA
+
+For this one, we attempted to solve this but were unsuccessful with all of our attempts. However, we identified that it is a sha256 crypt and here is an example of a hashcat algorithm used when attempting to solve this:
+
+hashcat -m 7400 -a 0 sha256.hash top10mil_letters_digits_symbols.txt --potfile-path=hc.pot --session=top10m_filtered_sha256
