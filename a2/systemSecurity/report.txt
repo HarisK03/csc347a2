@@ -34,9 +34,18 @@
 
 	PLACE john the ripper results below.
 
-	arnold:password:1000:1000:Arnold Rosenbloom,,,:/home/arnold:/bin/bash
-	joe:joeeoj:1002:1002::/home/joe:/bin/bash
-	sid:letMeIn:1003:1003::/home/sid:/bin/bash
+	COMMAND RUN:
+	┌──(kali㉿kali)-[~/Downloads]
+	└─$ john hash.txt --wordlist=/usr/share/wordlists/rockyou.txt
+
+	RESULTS:
+	┌──(kali㉿kali)-[~/Downloads]
+	└─$ john --show hash.txt
+	arnold:password:16861:0:99999:7:::
+	joe:joeeoj:16735:0:99999:7:::
+	sid:letMeIn:16735:0:99999:7:::
+
+	3 password hashes cracked, 2 left
 
 2c) [2 Marks] Modify user sid so that they are now a root user with password 'password'.
 
